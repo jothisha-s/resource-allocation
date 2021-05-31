@@ -6,33 +6,43 @@ public class ResourceManager {
 
     public static void main(String... args) {
         int hours = 24;
-        int cpu = 135;
-        Float price = null;
+        Integer cpu = null;
+        Float price = 300.0F;
         List<ServerWrapper> results = getCosts(getInstances(), hours, cpu, price);
         Collections.sort(results, (a1, a2) -> Float.compare(a1.getTotalCost(), a2.getTotalCost()));
         System.out.println(results);
 
     }
 
-    static List<ServerWrapper> getCosts(Map<String, Map<String, Float>> instances, int hours, int cpus, Float price) {
+    static List<ServerWrapper> getCosts(Map<String, Map<String, Float>> instances, int hours, Integer cpus, Float price) {
         List<ServerWrapper> result = new ArrayList<>();
-        if(price == null) {
+
             for (String region: instances.keySet()) {
-                Integer cpuTobeAlloted = cpus;
+
 
 
                 List<ResourceTypeEnum> resourceTypeEnumList = ResourceTypeEnum.getResourceTypesByDescending();
                 Map<String, Float> sortedMap = sortByValue(instances.get(region));
                 Map<String, Integer> server = new HashMap<>();
-                allotServers(sortedMap, server, resourceTypeEnumList, cpuTobeAlloted);
-                if(cpuTobeAlloted > 0) {
-                    resourceTypeEnumList = Arrays.asList(ResourceTypeEnum.values());
-                    for(ResourceTypeEnum resourceTypeEnum: resourceTypeEnumList) {
-                        if(instances.get(resourceTypeEnum.getName()) != null && cpuTobeAlloted <= resourceTypeEnum.getNumberOfCPU()) {
-                            server.put(resourceTypeEnum.getName(), resourceTypeEnum.getNumberOfCPU());
-                            cpuTobeAlloted = 0;
+                if((price == null || price <= 0.0F) && (cpus != null && cpus > 0)) {
+                    Integer cpuTobeAlloted = cpus;
+                    allotServers(sortedMap, server, resourceTypeEnumList, cpuTobeAlloted);
+                    if (cpuTobeAlloted > 0) {
+                        resourceTypeEnumList = Arrays.asList(ResourceTypeEnum.values());
+                        for (ResourceTypeEnum resourceTypeEnum : resourceTypeEnumList) {
+                            if (instances.get(resourceTypeEnum.getName()) != null && cpuTobeAlloted <= resourceTypeEnum.getNumberOfCPU()) {
+                                server.put(resourceTypeEnum.getName(), resourceTypeEnum.getNumberOfCPU());
+                                cpuTobeAlloted = 0;
+                            }
                         }
                     }
+                } else if((cpus == null || cpus <= 0) && (price != null && price > 0.0F)) {
+                    Integer cpuTobeAlloted = cpus;
+                    Float priceRemaining = price;
+                    allotServers(sortedMap, server, resourceTypeEnumList,  price, hours);
+
+                } else {
+                    // TODO
                 }
                 float totalCost = 0.0f;
 
@@ -44,7 +54,7 @@ public class ResourceManager {
                 serverWrapper.setRegion(region);
                 serverWrapper.setTotalCost(totalCost);
                 result.add(serverWrapper);
-            }
+
         }
         return result;
     }
@@ -60,6 +70,23 @@ public class ResourceManager {
 
         }
     }
+
+    static void allotServers(Map<String, Float> instances, Map<String, Integer> servers, List<ResourceTypeEnum> resourceTypeEnumList, Float price, Integer hours) {
+        for(ResourceTypeEnum resourceTypeEnum: resourceTypeEnumList) {
+            if(instances.get(resourceTypeEnum.getName()) != null && price >= (instances.get(resourceTypeEnum.getName()).floatValue() * hours)) {
+                Float remaining = price % (instances.get(resourceTypeEnum.getName()).floatValue() * hours);
+                Float allotted = price / (instances.get(resourceTypeEnum.getName()).floatValue() * hours);
+                servers.put(resourceTypeEnum.getName(), allotted.intValue());
+                price = remaining;
+            }
+
+        }
+    }
+
+    static void allotServers(Map<String, Float> instances, Map<String, Integer> servers, List<ResourceTypeEnum> resourceTypeEnumList, Integer cpuTobeAlloted, Float price) {
+        // TODO
+    }
+
     static Map<String, Map<String, Float>> getInstances() {
         Map<String, Map<String, Float>> instances = new HashMap<>();
         Map<String, Float> instance = new HashMap<>();
