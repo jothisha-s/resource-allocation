@@ -6,12 +6,20 @@ public class ResourceManager {
 
     public static void main(String... args) {
         int hours = 24;
-        Integer cpu = null;
-        Float price = 300.0F;
+        Integer cpu = 500;
+        Float price = null;
+
+        System.out.println(" Demand on number of CPU");
         List<ServerWrapper> results = getCosts(getInstances(), hours, cpu, price);
         Collections.sort(results, (a1, a2) -> Float.compare(a1.getTotalCost(), a2.getTotalCost()));
         System.out.println(results);
 
+        cpu = null;
+        price = 300.0F;
+        System.out.println(" Demand on price");
+        results = getCosts(getInstances(), hours, cpu, price);
+        Collections.sort(results, (a1, a2) -> Float.compare(a1.getTotalCost(), a2.getTotalCost()));
+        System.out.println(results);
     }
 
     static List<ServerWrapper> getCosts(Map<String, Map<String, Float>> instances, int hours, Integer cpus, Float price) {
